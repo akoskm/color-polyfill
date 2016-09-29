@@ -1,17 +1,83 @@
-$(function(){
-  if (!Modernizr.inputtypes.color) {
+(function (root, factory) {
+  if(typeof define === "function" && define.amd) {
+    // Now we're wrapping the factory and assigning the return
+    // value to the root (window) and returning it as well to
+    // the AMD loader.
+    define(["jquery"], function($){
+      return (root.colorPolyfill = factory($));
+    });
+  } else if (typeof module === "object" && module.exports) {
+    // I've not encountered a need for this yet, since I haven't
+    // run into a scenario where plain modules depend on CommonJS
+    // *and* I happen to be loading in a CJS browser environment
+    // but I'm including it for the sake of being thorough
+    module.exports = (root.colorPolyfill = factory(require("jquery")));
+  } else {
+    root.colorPolyfill = factory(root.jQuery);
+  }
+}(this, function ($) {
+
+  // http://stackoverflow.com/a/7787648/407466
+  function supportsColorInput() {
+    var inputElem = document.createElement('input'), bool, docElement = document.documentElement, smile = ':)';
+
+    inputElem.setAttribute('type', 'color');
+    bool = inputElem.type !== 'text';
+
+    // We first check to see if the type we give it sticks..
+    // If the type does, we feed it a textual value, which shouldn't be valid.
+    // If the value doesn't stick, we know there's input sanitization which infers a custom UI
+    if (bool) {
+      inputElem.value         = smile;
+      inputElem.style.cssText = 'position:absolute;visibility:hidden;';
+
+      // chuck into DOM and force reflow for Opera bug in 11.00
+      // github.com/Modernizr/Modernizr/issues#issue/159
+      docElement.appendChild(inputElem);
+      docElement.offsetWidth;
+      bool = inputElem.value != smile;
+      docElement.removeChild(inputElem);
+    }
+
+    return bool;
+  }
+
+  // https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_Animations/Detecting_CSS_animation_support
+  // http://stackoverflow.com/a/14763909/407466
+  function detectCSSFeature(featureToCheck) {
+    var feature = false,
+      domPrefixes = 'Webkit Moz ms O'.split(' '),
+      elm = document.createElement('div'),
+      featurenameCapital = null,
+      featurename = featureToCheck.toLowerCase();
+
+    if( elm.style[featurename] !== undefined ) {
+      feature = true;
+    } else {
+      featurenameCapital = featurename.charAt(0).toUpperCase() + featurename.substr(1);
+      for( var i = 0; i < domPrefixes.length; i++ ) {
+        if( elm.style[domPrefixes[i] + featurenameCapital ] !== undefined ) {
+          feature = true;
+          break;
+        }
+      }
+    }
+    return feature;
+  }
+
+  if (!supportsColorInput()) {
     var makeHexCode = function (r, g, b) {
       var nR = r.toString(16),
-	  nG = g.toString(16),
-	  nB = b.toString(16);
+        nG = g.toString(16),
+        nB = b.toString(16);
       while (nR.length < 2) {
-	nR = "0" + nR;
+        nR = "0" + nR;
       }
       while (nG.length < 2) {
-	nG = "0" + nG;
+        nG = "0" + nG;
       }
       while (nB.length < 2) {
-	nB = "0" + nB;
+        nB = "0" + nB;
       }
       return "#" + nR + nG + nB;
     };
@@ -25,14 +91,14 @@ $(function(){
       s = max == 0 ? 0 : d / max;
 
       if (max == min) {
-	h = 0;
+        h = 0;
       } else {
-	switch(max){
-	  case r: h = (g - b) / d + (g < b ? 6 : 0); break;
-	  case g: h = (b - r) / d + 2; break;
-	  case b: h = (r - g) / d + 4; break;
-	}
-	h /= 6;
+        switch(max){
+        case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+        case g: h = (b - r) / d + 2; break;
+        case b: h = (r - g) / d + 4; break;
+        }
+        h /= 6;
       }
 
       return [Math.round(h * 360), Math.round((s * 100) * 10)/10, Math.round((v * 100) * 10)/10];
@@ -49,12 +115,12 @@ $(function(){
       var t = v * (1 - (1 - f) * s);
 
       switch(i % 6){
-	case 0: r = v, g = t, b = p; break;
-	case 1: r = q, g = v, b = p; break;
-	case 2: r = p, g = v, b = t; break;
-	case 3: r = p, g = q, b = v; break;
-	case 4: r = t, g = p, b = v; break;
-	case 5: r = v, g = p, b = q; break;
+      case 0: r = v, g = t, b = p; break;
+      case 1: r = q, g = v, b = p; break;
+      case 2: r = p, g = v, b = t; break;
+      case 3: r = p, g = q, b = v; break;
+      case 4: r = t, g = p, b = v; break;
+      case 5: r = v, g = p, b = q; break;
       }
 
       return [Math.round(r * 255), Math.round(g * 255), Math.round(b * 255)];
@@ -62,15 +128,15 @@ $(function(){
 
     var sanitizeChannelValue = function (max) {
       if (/^\d+$/.test(this.value)) {
-	if (parseInt(this.value, 10) > max) {
-	  $(this).val(max);
-	} else if (parseInt(this.value, 10) < 0) {
-	  $(this).val(0);
-	}
+        if (parseInt(this.value, 10) > max) {
+          $(this).val(max);
+        } else if (parseInt(this.value, 10) < 0) {
+          $(this).val(0);
+        }
       } else if (/^[a-fA-F\d]{2}$/.test(this.value)) {
-	$(this).val(parseInt(this.value, 16));
+        $(this).val(parseInt(this.value, 16));
       } else {
-	$(this).val(0);
+        $(this).val(0);
       }
     };
 
@@ -87,7 +153,7 @@ $(function(){
         name: $(this).attr('name'),
         value: startValue
       });
-      
+
       var btnContainer = document.createElement('span');
       $(btnContainer).addClass("color-picker-button-container");
 
@@ -480,53 +546,53 @@ $(function(){
           }
         }
       });
-      if (Modernizr.csstransitions) {
-	pickerDiv.className = "color-picker-dialog color-picker-closed";
-	$(colorBtn).click(function () {
-	  $(pickerDiv).unbind('transitionend');
-	  $(pickerDiv).unbind('oTransitionEnd');
-	  $(pickerDiv).unbind('webkitTransitionEnd');
-	  $(pickerDiv).unbind('MSTransitionEnd');
-	  pickerDiv.style.display = 'block';
-	  $(pickerDiv).css('opacity');
-	  pickerDiv.className = "color-picker-dialog color-picker-open";
-	  return false;
-	});
-	var closeFunc = function () {
-	  if (pickerDiv.className == "color-picker-dialog color-picker-open") {
-	    var transitionend_function = function(event, ui) {
-	      pickerDiv.style.display = 'none';
-	      $(pickerDiv).unbind({
-		transitionend: transitionend_function,
-		oTransitionEnd: transitionend_function,
-		webkitTransitionEnd: transitionend_function,
-		MSTransitionEnd: transitionend_function
-	      });
-	    }
-	    $(pickerDiv).bind({
-	      transitionend: transitionend_function,
-	      oTransitionEnd: transitionend_function,
-	      webkitTransitionEnd: transitionend_function,
-	      MSTransitionEnd: transitionend_function
-	    });
-	    pickerDiv.className = "color-picker-dialog color-picker-closed";
-	    return false;
-	  }
-	}
-	$(pickerDiv).mouseleave(closeFunc);
-	$(okButton).click(closeFunc);
+      if (detectCSSFeature('transition')) {
+        pickerDiv.className = "color-picker-dialog color-picker-closed";
+        $(colorBtn).click(function () {
+          $(pickerDiv).unbind('transitionend');
+          $(pickerDiv).unbind('oTransitionEnd');
+          $(pickerDiv).unbind('webkitTransitionEnd');
+          $(pickerDiv).unbind('MSTransitionEnd');
+          pickerDiv.style.display = 'block';
+          $(pickerDiv).css('opacity');
+          pickerDiv.className = "color-picker-dialog color-picker-open";
+          return false;
+        });
+        var closeFunc = function () {
+          if (pickerDiv.className == "color-picker-dialog color-picker-open") {
+            var transitionend_function = function(event, ui) {
+              pickerDiv.style.display = 'none';
+              $(pickerDiv).unbind({
+                transitionend: transitionend_function,
+                oTransitionEnd: transitionend_function,
+                webkitTransitionEnd: transitionend_function,
+                MSTransitionEnd: transitionend_function
+              });
+            }
+            $(pickerDiv).bind({
+              transitionend: transitionend_function,
+              oTransitionEnd: transitionend_function,
+              webkitTransitionEnd: transitionend_function,
+              MSTransitionEnd: transitionend_function
+            });
+            pickerDiv.className = "color-picker-dialog color-picker-closed";
+            return false;
+          }
+        }
+        $(pickerDiv).mouseleave(closeFunc);
+        $(okButton).click(closeFunc);
       } else {
-	$(colorBtn).click(function () {
-	  $(pickerDiv).fadeIn();
-	  return false;
-	});
-	var closeFunc = function () {
-	  $(pickerDiv).fadeOut();
-	  return false;
-	}
-	$(pickerDiv).mouseleave(closeFunc);
-	$(okButton).click(closeFunc);
+        $(colorBtn).click(function () {
+          $(pickerDiv).fadeIn();
+          return false;
+        });
+        var closeFunc = function () {
+          $(pickerDiv).fadeOut();
+          return false;
+        }
+        $(pickerDiv).mouseleave(closeFunc);
+        $(okButton).click(closeFunc);
       }
     });
   }
-});
+}));
